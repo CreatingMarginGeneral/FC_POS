@@ -11,7 +11,7 @@ import { recordOrderAndSendReceipt, resolveStoreSupportEmail } from './services/
 import { Loader2 } from 'lucide-react';
 
 const POSMain: React.FC = () => {
-  const { user, employee, loading } = useAuth();
+  const { employee, loading } = useAuth();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -34,7 +34,7 @@ const POSMain: React.FC = () => {
   }
 
   // Not logged in -> Show Employee Login
-  if (!user || !employee) {
+  if (!employee) {
     return <LoginScreen />;
   }
 

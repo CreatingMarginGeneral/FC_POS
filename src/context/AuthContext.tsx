@@ -8,12 +8,16 @@ import {
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { Employee } from '../types';
+import { verifyEmployeeCode } from '../services/employeeCodes';
+
+const PIN_STORAGE_KEY = 'fc_pos_employee_session';
 
 interface AuthContextType {
   user: User | null;
   employee: Employee | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithCode: (code: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -90,14 +94,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Restore local code session if present
+    const savedSession = localStorage.getItem(PIN_STORAGE_KEY);
+    if (savedSession) {
+      try {
+        const parsed = JSON.parse(savedSession);
+        if (parsed && parsed.uid && parsed.name) {
+          setEmployee(parsed);
+        }
+      } catch (err) {
+        console.warn('Could not restore employee code session:', err);
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         const emp = await fetchEmployeeData(currentUser);
-        setEmployee(emp);
+        if (emp) {
+          setEmployee(emp);
+        }
       } else {
         setUser(null);
-        setEmployee(null);
+        // Only clear employee if there is no local PIN session
+        if (!localStorage.getItem(PIN_STORAGE_KEY)) {
+          setEmployee(null);
+        }
       }
       setLoading(false);
     });
@@ -130,14 +152,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithCode = async (code: string): Promise<{ success: boolean; error?: string }> => {
+    const matchedEmployee = verifyEmployeeCode(code);
+    if (!matchedEmployee) {
+      return { success: false, error: 'Invalid employee code. Please check your PIN and try again.' };
+    }
+
+    setEmployee(matchedEmployee);
+    try {
+      localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(matchedEmployee));
+    } catch (err) {
+      console.warn('Failed to store employee code session in localStorage:', err);
+    }
+    return { success: true };
+  };
+
   const logout = async () => {
-    await firebaseSignOut(auth);
+    try {
+      await firebaseSignOut(auth);
+    } catch (err) {
+      console.warn('Firebase signout note:', err);
+    }
+    localStorage.removeItem(PIN_STORAGE_KEY);
     setUser(null);
     setEmployee(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, employee, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, employee, loading, login, loginWithCode, logout }}>
       {children}
     </AuthContext.Provider>
   );

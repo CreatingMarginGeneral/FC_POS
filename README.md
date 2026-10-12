@@ -3,7 +3,10 @@
 Dedicated touch-screen Point of Sale application designed for the service counter to quickly tally services, look up customers, process card payments via Stripe Elements, and email receipts to customers and store support.
 
 ## Features
-- **Employee Login**: Authenticates counter staff via Firebase Auth against the `employee` (or `employees`) Firestore collection, linking orders to the specific staff member and store.
+- **Employee Login**:
+  - Quick 4-digit **Employee Code / PIN** keypad designed for busy counter staff.
+  - Optional full email & password login when needed.
+  - Links orders to the specific staff member and store.
 - **Quick Service Tally**:
   - Premium Drop Off ($1.25 / lb) with direct weight calculation
   - Budget Drop Off ($0.50 / lb)
