@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "fresh-clothes"
+  },
+  "targets": {
+    "fresh-clothes": {
+      "hosting": {
+        "pos": [
+          "fresh-clothes-pos"
+        ]
+      }
+    }
+  }
+}

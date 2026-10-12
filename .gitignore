@@ -3,6 +3,7 @@
 !.env.example
 node_modules/
 dist/
+.firebase/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
