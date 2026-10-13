@@ -24,6 +24,15 @@ const POSMain: React.FC = () => {
   const [completedOrder, setCompletedOrder] = useState<PosOrder | null>(null);
   const [storeSupportEmail, setStoreSupportEmail] = useState('support_boisewb@freshclotheslaundry.com');
 
+  // Sync cart to BBPOS WisePOS E when items/quantities change during checkout
+  useEffect(() => {
+    if (employee && (checkoutOpen || paymentOpen) && cart.length > 0) {
+      sendCartToWisePOSE(cart).catch((err) => {
+        console.warn('WisePOS E sync note:', err);
+      });
+    }
+  }, [employee, checkoutOpen, paymentOpen, cart]);
+
   // Loading state
   if (loading) {
     return (
@@ -117,15 +126,6 @@ const POSMain: React.FC = () => {
   const handleClearCart = () => {
     setCart([]);
   };
-
-  // Sync cart to BBPOS WisePOS E when items/quantities change during checkout
-  useEffect(() => {
-    if ((checkoutOpen || paymentOpen) && cart.length > 0) {
-      sendCartToWisePOSE(cart).catch((err) => {
-        console.warn('WisePOS E sync note:', err);
-      });
-    }
-  }, [checkoutOpen, paymentOpen, cart]);
 
   // Step 1: Open Checkout Modal & scan Wi-Fi for WisePOS E
   const handleOpenCheckout = () => {
