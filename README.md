@@ -20,8 +20,13 @@ Dedicated touch-screen Point of Sale application designed for the service counte
 - **Order Care Instructions**:
   - Add stain treatment, hang-dry, or fragrance-free instructions and order-specific notes at checkout.
   - Carry care instructions into the saved order, receipt dispatch, and printable counter receipt.
+- **BBPOS WisePOS E Wi-Fi Customer Screen & Stripe Terminal**:
+  - Tapping **Checkout** automatically scans the Wi-Fi network for the BBPOS WisePOS E reader.
+  - Live itemized cart totals and quantities are synced directly to the customer-facing WisePOS E screen.
+  - If Wi-Fi reader connection fails or is unavailable, staff receives an informative prompt instructing them to ask the customer to enter their card information, highlighting that all card details are securely encrypted and stored in Stripe.
+  - Automatic display reset on payment completion or counter reset.
 - **Touch-screen Card Payment**:
-  - Embedded **Stripe Elements** for credit and debit cards.
+  - Embedded **Stripe Elements** for credit and debit cards with end-to-end encryption.
   - High-contrast, large touch-target buttons and fields optimized for touch tablets and kiosk screens.
 - **Automated Receipts & Store Notifications**:
   - Emails itemized receipt to customer upon successful payment.
@@ -55,3 +60,6 @@ Configured in `.env`:
 - `VITE_FIREBASE_PROJECT_ID`: Firebase project ID
 - `VITE_STRIPE_PUBLISHABLE_KEY`: Live Stripe publishable key for card entry
 - `VITE_API_BASE_URL`: Cloud Functions URL for payment intent & receipt dispatch
+- `VITE_EMPLOYEE_CODES`: Optional JSON array of valid employee PINs (defaults to standard staff codes)
+- `VITE_STRIPE_TERMINAL_SIMULATED`: Optional `true` to test WisePOS E simulated reader in local dev
+

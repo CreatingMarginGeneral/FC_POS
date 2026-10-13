@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/Header';
 import { LoginScreen } from './components/LoginScreen';
@@ -8,6 +8,7 @@ import { PaymentModal } from './components/PaymentModal';
 import { SuccessScreen } from './components/SuccessScreen';
 import { CartItem, Customer, PosOrder, ServiceItem } from './types';
 import { recordOrderAndSendReceipt, resolveStoreSupportEmail } from './services/api';
+import { sendCartToWisePOSE, clearWisePOSDisplay } from './services/terminal';
 import { Loader2 } from 'lucide-react';
 
 const POSMain: React.FC = () => {
@@ -117,9 +118,23 @@ const POSMain: React.FC = () => {
     setCart([]);
   };
 
-  // Step 1: Open Checkout Modal
+  // Sync cart to BBPOS WisePOS E when items/quantities change during checkout
+  useEffect(() => {
+    if ((checkoutOpen || paymentOpen) && cart.length > 0) {
+      sendCartToWisePOSE(cart).catch((err) => {
+        console.warn('WisePOS E sync note:', err);
+      });
+    }
+  }, [checkoutOpen, paymentOpen, cart]);
+
+  // Step 1: Open Checkout Modal & scan Wi-Fi for WisePOS E
   const handleOpenCheckout = () => {
     setCheckoutOpen(true);
+    if (cart.length > 0) {
+      sendCartToWisePOSE(cart).catch((err) => {
+        console.warn('WisePOS E scan note:', err);
+      });
+    }
   };
 
   // Step 2: Customer selected / entered -> Open Touch Card Payment Modal
@@ -167,6 +182,11 @@ const POSMain: React.FC = () => {
 
     setPaymentOpen(false);
 
+    // Clear customer-facing WisePOS E display
+    clearWisePOSDisplay().catch((err) => {
+      console.warn('Error clearing WisePOS E display:', err);
+    });
+
     // Record order and fire email dispatches
     try {
       const orderId = await recordOrderAndSendReceipt(orderData);
@@ -196,6 +216,9 @@ const POSMain: React.FC = () => {
     setCompletedOrder(null);
     setCheckoutOpen(false);
     setPaymentOpen(false);
+    clearWisePOSDisplay().catch((err) => {
+      console.warn('Error clearing WisePOS E display on reset:', err);
+    });
   };
 
   return (

@@ -6,9 +6,19 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
-import { X, CreditCard, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  X,
+  CreditCard,
+  ShieldCheck,
+  AlertCircle,
+  Loader2,
+  Wifi,
+  WifiOff,
+  RefreshCw,
+} from 'lucide-react';
 import { Customer, CartItem } from '../types';
 import { createPaymentIntent } from '../services/api';
+import { useTerminal, sendCartToWisePOSE } from '../services/terminal';
 
 const stripePromise = loadStripe(
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
@@ -34,15 +44,28 @@ const CheckoutForm: React.FC<PaymentFormProps> = ({
 }) => {
   const stripe = useStripe();
   const elements = useElements();
+  const terminal = useTerminal();
 
   const [cardholderName, setCardholderName] = useState(
     `${customer.firstName} ${customer.lastName}`.trim()
   );
   const [processing, setProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [retryingTerminal, setRetryingTerminal] = useState(false);
 
   const totalAmount = cart.reduce((sum, item) => sum + item.total, 0);
   const totalCents = Math.round(totalAmount * 100);
+
+  const handleRetryTerminal = async () => {
+    setRetryingTerminal(true);
+    try {
+      await sendCartToWisePOSE(cart);
+    } catch (err) {
+      console.warn('Retry WisePOS E scan result:', err);
+    } finally {
+      setRetryingTerminal(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +158,54 @@ const CheckoutForm: React.FC<PaymentFormProps> = ({
         </div>
       )}
 
+      {/* WisePOS E Wi-Fi Discovery / Status Banner */}
+      {terminal.status === 'connected' ? (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2">
+            <Wifi className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <span>
+              <strong className="font-semibold text-emerald-950">BBPOS WisePOS E Connected:</strong> Cart items are synced on customer screen.
+            </span>
+          </div>
+          <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-full text-[10px]">
+            Live Screen
+          </span>
+        </div>
+      ) : terminal.status === 'discovering' || terminal.status === 'connecting' || retryingTerminal ? (
+        <div className="p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-sky-900 text-xs flex items-center gap-2.5">
+          <Loader2 className="w-4 h-4 text-brand-teal animate-spin flex-shrink-0" />
+          <span>Scanning Wi-Fi network for BBPOS WisePOS E and syncing cart...</span>
+        </div>
+      ) : (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-2">
+          <div className="flex items-start gap-2.5">
+            <WifiOff className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-amber-950 text-sm">
+                Could not connect to BBPOS WisePOS E on Wi-Fi
+              </p>
+              <p className="mt-1 text-amber-900 leading-relaxed">
+                Please ask the customer to enter their credit card information below (noting that all card information is securely stored and encrypted in Stripe).
+              </p>
+            </div>
+          </div>
+          <div className="pt-2 flex items-center justify-between border-t border-amber-200/60">
+            <button
+              type="button"
+              onClick={handleRetryTerminal}
+              disabled={retryingTerminal}
+              className="inline-flex items-center gap-1.5 font-bold text-brand-teal hover:text-brand-tealDark active:underline transition-colors text-xs disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${retryingTerminal ? 'animate-spin' : ''}`} />
+              <span>Retry scanning Wi-Fi reader</span>
+            </button>
+            <span className="text-[11px] text-amber-800 font-medium">
+              Secure Stripe card entry
+            </span>
+          </div>
+        </div>
+      )}
+
       {paymentError && (
         <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-start gap-2.5">
           <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500 mt-0.5" />
@@ -183,9 +254,9 @@ const CheckoutForm: React.FC<PaymentFormProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-gray-400 justify-center">
-        <ShieldCheck className="w-4 h-4 text-brand-teal" />
-        <span>Secured with end-to-end 256-bit Stripe encryption</span>
+      <div className="flex items-center gap-2 text-xs text-gray-500 justify-center">
+        <ShieldCheck className="w-4 h-4 text-brand-teal flex-shrink-0" />
+        <span>All card information is end-to-end encrypted and securely stored in Stripe</span>
       </div>
 
       {/* Submit & Cancel Buttons */}

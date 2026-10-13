@@ -146,6 +146,34 @@ async function callFunctionEndpoint(endpointName: string, bodyData: any): Promis
 }
 
 /**
+ * Fetches a Stripe Terminal connection token from the Cloud Function backend
+ */
+export async function fetchTerminalConnectionToken(storeUID?: string): Promise<string> {
+  const candidateEndpoints = [
+    'posCreateTerminalConnectionTokenV2',
+    'posTerminalConnectionTokenV2',
+    'createTerminalConnectionToken',
+    'posCreateConnectionToken',
+  ];
+
+  let lastError: any = null;
+  for (const ep of candidateEndpoints) {
+    try {
+      const resp = await callFunctionEndpoint(ep, { storeUID: storeUID || 'boise-store' });
+      if (resp.ok) {
+        const data = await resp.json();
+        const token = data.secret || data.connectionToken || data.client_secret;
+        if (token) return token;
+      }
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('Terminal connection token endpoint unavailable');
+}
+
+/**
  * Creates a Stripe PaymentIntent for the POS order
  */
 export async function createPaymentIntent(params: {

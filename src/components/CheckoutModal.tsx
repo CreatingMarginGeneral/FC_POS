@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Plus, Minus, Search, UserCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Plus, Minus, Search, UserCheck, AlertCircle, Loader2, Wifi } from 'lucide-react';
 import { CartItem, Customer } from '../types';
 import { searchCustomer } from '../services/api';
+import { useTerminal } from '../services/terminal';
 
 interface CheckoutModalProps {
   cart: CartItem[];
@@ -26,6 +27,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onCareNotesChange,
   onProceedToPayment,
 }) => {
+  const terminal = useTerminal();
   const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
 
   // Search by fields
@@ -103,7 +105,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in-95">
         {/* Curio Check Out Header */}
         <div className="bg-brand-teal text-white px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
-          <h2 className="text-xl font-bold tracking-tight">Check Out</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold tracking-tight">Check Out</h2>
+            {terminal.status === 'connected' && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/25 text-emerald-100 border border-emerald-400/30">
+                <Wifi className="w-3 h-3 text-emerald-300" />
+                WisePOS E Synced
+              </span>
+            )}
+            {(terminal.status === 'discovering' || terminal.status === 'connecting') && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/20 text-teal-100">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Scanning Wi-Fi Reader...
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 flex items-center justify-center text-white transition-colors"
